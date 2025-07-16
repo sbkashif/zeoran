@@ -1,0 +1,23 @@
+# Build directory
+build/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Compiled Object files
+*.o
+*.obj
+
+# Executables
+zeoran
+*.exe
+
+# macOS specific
+.DS_Store
+
+# Temporary files
+*.log
+*.tmp
