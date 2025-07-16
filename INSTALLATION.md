@@ -36,7 +36,10 @@ cmake ..
 make
 
 # Run the program
-./bin/zeoran < ../generate.input
+# First copy the input file to the current directory
+cp ../generate.input .
+# Then run the program
+./bin/zeoran
 ```
 
 ### Using Traditional Make
@@ -46,7 +49,7 @@ make
 make
 
 # Run the program directly from build directory
-./zeoran
+./build/bin/zeoran
 ```
 
 This will:
@@ -140,40 +143,6 @@ make install PREFIX=$HOME/.local
 - **CMake**: Recommended for most users, especially on modern systems or when working across different platforms
 - **Traditional Make**: Suitable for simpler Unix environments or when CMake isn't available
 - Both methods will produce the same executable with identical functionality
-
-If you're building on a cluster or HPC environment, you might encounter issues with system headers or finding dependencies like Eigen. We provide specialized build targets for these environments:
-
-### Diagnosing Build Issues
-
-```bash
-# Check your build environment
-make diagnose
-```
-
-This will show information about your compiler, available Eigen installations, and system headers that might be causing issues.
-
-### Using Cluster Build Target
-
-```bash
-# Build with specialized cluster settings
-make cluster
-```
-
-This target automatically tries different compilers commonly available on cluster systems (mpicxx, icpc, g++) to find one that works.
-
-### Using Module System
-
-If your cluster uses the module system for managing software (like Eigen):
-
-```bash
-# Load the Eigen module (adjust module name as needed)
-module load eigen
-
-# Build with module support
-make module_build
-```
-
-The build system will automatically detect the Eigen installation from the loaded module.
 
 ## Installation Scripts
 
@@ -271,12 +240,12 @@ make LDFLAGS="-L/path/to/lib -lsomelib"
 
 For most users, especially on clusters without admin privileges, installation is not necessary. You can run directly from the build directory. However, if you want to install:
 
-### User Home Installation (Default)
+### User Home Installation
 
 ```bash
 # Build and install to $HOME/.local
 make
-make install
+make install PREFIX=$HOME/.local
 ```
 
 Add to your PATH (add to your .bashrc or .profile for persistence):
@@ -300,19 +269,27 @@ export PATH=$PATH:/path/to/custom/location/bin
 
 Requires admin privileges:
 ```bash
-sudo make install PREFIX=/usr/local
+sudo make install
 ```
 
 ## Environment Variables
 
 ### ZEORAN_DATA_DIR
 
-Override the default data directory location:
-```bash
-export ZEORAN_DATA_DIR=/path/to/custom/data
-```
+The program automatically looks for zeolite data files in several locations:
 
-This can be useful if you want to keep your data files separate from the build directory or if you're running multiple instances with different data sets.
+1. First, it checks the `ZEORAN_DATA_DIR` environment variable:
+   ```bash
+   export ZEORAN_DATA_DIR=/path/to/custom/data
+   ```
+
+2. Then it checks for a compiled-in default path (set at build time)
+
+3. Finally, it falls back to:
+   - `./zeoran_data` (local directory)
+   - `/usr/local/share/zeoran` (standard installation location)
+
+This flexibility makes it easy to use the software with different data sets.
 
 ## Cleaning Up
 
@@ -327,7 +304,7 @@ make clean
 If you've installed the program:
 
 ```bash
-# Default uninstall from home directory
+# Default uninstall
 make uninstall
 
 # Custom location uninstall

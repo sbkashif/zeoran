@@ -87,10 +87,10 @@ For detailed installation instructions including build options, configuration pa
 
 ## Basic Usage
 
-To run the program, prepare an input file (`generate.input`) and run the executable:
+To run the program, prepare an input file named `generate.input` in the current directory and run the executable:
 
 ```bash
-./zeoran < generate.input  
+./zeoran
 ```
 
 ### Structure of generate.input
@@ -177,7 +177,7 @@ The repository contains the information to generate structures for the MFI, MOR,
 
 4. Run the executable:
    ```bash
-   ./zeoran < generate.input
+   ./zeoran
    ```
 
 ## Testing Framework
