@@ -12,8 +12,16 @@ int main (void) {
 	atom *list;
 	ifstream fin;
 
-	//Use current time as seed for random generator
-    srand(time(NULL));
+	//Use environment variable for seed if available, otherwise use current time
+	const char* seed_env = getenv("RANDOM_SEED");
+	if (seed_env != nullptr) {
+		unsigned int seed = atoi(seed_env);
+		cout << "Using fixed random seed: " << seed << endl;
+		srand(seed);
+	} else {
+		cout << "Using current time as random seed" << endl;
+		srand(time(NULL));
+	}
 
 	//Check if input exists and if so read
 	fin.open("generate.input");
