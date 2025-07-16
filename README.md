@@ -18,6 +18,18 @@ P. Romero-Marimon *et al.*, "Adsorption of carbon dioxide in non-Löwenstein zeo
 
 ```
 Salman Bin Kashif
+```
+
+## Algorithm Compatibility Notes
+
+Zeoran offers multiple algorithms for Al distribution:
+
+- **random**: Most reliable algorithm, compatible with all zeolite structures
+- **chains**: Creates chains of Al atoms, may have difficulty with certain structures like LTA due to connectivity patterns
+- **clusters**: Creates spatial clusters of Al atoms
+- **merw**: Uses Maximal Entropy Random Walk for Al distribution
+
+When using the chains algorithm with LTA structures, you may encounter "No more neighbours available" errors. In these cases, use the random algorithm instead or reduce the chain length parameters.
 Shi Research Group
 Department of Chemical and Biological Engineering
 University at Buffalo
@@ -27,6 +39,40 @@ July 2025
 The modified version of the software is designed to be more flexible and user-friendly, allowing for easier integration into various workflows and supporting a wider range of file formats. It also includes a comprehensive testing framework to ensure reproducibility and facilitate development. The immediate use of the modified version is to modify the Si/Al ratio in LTA zeolites which were not covered by the original software. 
 
 The corresponding publication information for the LTA zeolite framework will be provided soon.
+
+## New Features
+
+### Automated CIF Preprocessing
+
+A key improvement in this version is the automated preprocessing of CIF files. Instead of manually creating unit cell and atom site files, you can now directly use CIF files:
+
+```bash
+# Preprocess a CIF file for zeoran
+python preprocess_cif.py path/to/your/file.cif ZEOLITE_NAME
+```
+
+This automatically:
+- Extracts unit cell parameters
+- Identifies atom positions and charges
+- Generates all required internal files
+- Allows immediate use in generate.input
+
+### Interactive Demo Workflow
+
+A complete demo workflow script is provided to guide new users:
+
+```bash
+# Run the interactive demo
+./demo_workflow.sh path/to/your/file.cif ZEOLITE_NAME
+```
+
+The demo script:
+- Preprocesses your CIF file
+- Guides you through installation options
+- Helps set up the input parameters
+- Runs zeoran with your configuration
+
+For detailed usage instructions, see the [INSTALLATION.md](INSTALLATION.md) file.
 
 ## Base software description
 Main goal of the software is to modify the Si/Al ratio in zeolites. The aluminum substitutions are randomly generated from 4 different probability distributions, implemented by 4 different algorithms:

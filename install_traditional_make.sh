@@ -24,6 +24,15 @@ make install PREFIX="$PREFIX" || { echo "Installation failed. Exiting."; exit 1;
 if [ -f "$PREFIX/bin/zeoran" ]; then
     echo "Installation successful!"
     echo "Refer to the executable at $PREFIX/bin/zeoran"
+    
+    # Check for preprocessing script
+    if [ -f "preprocess_cif.py" ]; then
+        echo ""
+        echo "CIF Preprocessing: You can use the preprocessing script to prepare CIF files:"
+        echo "  python preprocess_cif.py path/to/your/file.cif ZEOLITE_NAME"
+        echo ""
+        echo "After preprocessing, use ZEOLITE_NAME in your generate.input file."
+    fi
 else
     echo "Installation verification failed. Please check the output for errors."
     exit 1

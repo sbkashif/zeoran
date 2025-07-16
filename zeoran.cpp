@@ -5,6 +5,16 @@
 
 int main (void) {
 
+	// Print banner and usage information
+	cout << "=================================================" << endl;
+	cout << "ZEORAN - ZEOlite RANdom generation" << endl;
+	cout << "Version: 2.0 (July 2025)" << endl;
+	cout << "=================================================" << endl;
+	cout << "Note: You can now use the preprocess_cif.py script to" << endl;
+	cout << "automatically process CIF files for use with zeoran:" << endl;
+	cout << "  python preprocess_cif.py your_file.cif ZEOLITE_NAME" << endl;
+	cout << "=================================================" << endl << endl;
+
 	string name_zeo, name_alg, file_zeo, file_ucell, out_name;
 	int Nstruct, Nchains, Nals;
 	vector<int> chains, Als;

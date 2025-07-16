@@ -52,6 +52,77 @@ make
 ./build/bin/zeoran
 ```
 
+## CIF File Preprocessing
+
+Zeoran now includes an automated preprocessing script that extracts unit cell information and atom positions directly from CIF files, eliminating the need for manual preparation of these files.
+
+### Using the Preprocessing Script
+
+```bash
+# Preprocess a CIF file for use with Zeoran
+python preprocess_cif.py path/to/your/file.cif ZEOLITE_NAME
+
+# Example
+python preprocess_cif.py zeoran_data/cif_files/Framework_0_initial_1_1_1_P1.cif LTA
+```
+
+This will:
+1. Extract unit cell information from the CIF file
+2. Generate the necessary `unit_cell/ZEOLITE_NAME.txt` file
+3. Generate the required `atom_sites/ZEOLITE_NAME.txt` file
+4. Copy the CIF file to the zeoran_data directory
+
+After preprocessing, you can use the zeolite name in your `generate.input` file as usual.
+
+### Demo Workflow
+
+For convenience, a demo workflow script is provided that demonstrates the complete process:
+
+```bash
+# Run the demo workflow with a CIF file
+./demo_workflow.sh path/to/your/file.cif ZEOLITE_NAME
+
+# Example
+./demo_workflow.sh zeoran_data/cif_files/Framework_0_initial_1_1_1_P1.cif LTA
+```
+
+This interactive script will:
+1. Preprocess the CIF file
+2. Guide you through choosing an installation method (CMake or traditional Make)
+3. Help you set up a generate.input file with your chosen algorithm
+4. Run zeoran with the processed data
+
+This is the recommended approach for new users to quickly get started with zeoran.
+
+### Troubleshooting CIF Preprocessing
+
+If you encounter issues when running zeoran with preprocessed CIF files, consider the following:
+
+1. **CIF File Quality**: Not all CIF files are suitable for zeoran. The file should:
+   - Contain silicon (Si) atoms and oxygen (O) atoms
+   - Have a proper Si:O ratio (typically around 1:2 for zeolites)
+   - Use fractional coordinates within [0,1]
+   - Have well-defined unit cell parameters
+
+2. **Floating Point Exceptions**: These often occur when:
+   - The connectivity matrix cannot be properly constructed
+   - The structure doesn't follow expected zeolite topology
+   - Distance calculations encounter numerical issues
+
+3. **Validation**: The preprocessing script includes validation steps to help identify potential issues:
+   ```bash
+   python preprocess_cif.py your_file.cif ZEOLITE_NAME
+   ```
+   Look for warnings in the output that might indicate problems with the structure.
+
+4. **Manual Verification**: You can examine the generated files to ensure they match expected formats:
+   ```bash
+   cat zeoran_data/unit_cell/ZEOLITE_NAME.txt
+   head zeoran_data/atom_sites/ZEOLITE_NAME.txt
+   ```
+
+5. **Debug Mode**: The demo script includes debug options when crashes occur to help identify the source of problems.
+
 This will:
 1. Create a `build` directory in the repository
 2. Build the executable in the correct location

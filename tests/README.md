@@ -13,6 +13,8 @@ This directory contains test cases and benchmarks for the Zeoran software.
 1. `run_tests.sh` - Main script to run tests with different inputs
 2. `compare_benchmarks.sh` - Script to compare outputs with reference benchmarks
 3. `create_benchmarks.sh` - Script to create new reference benchmarks
+4. `test_cif_processing.sh` - Script to test CIF file preprocessing functionality
+5. `compare_structures.py` - Python script to compare zeoran structure files for equivalence
 
 ## Running Tests
 
@@ -27,6 +29,12 @@ RANDOM_SEED=54321 ./run_tests.sh
 
 # Compare outputs with reference benchmarks
 ./compare_benchmarks.sh
+
+# Test CIF file preprocessing
+./test_cif_processing.sh
+
+# Compare structure files directly
+./compare_structures.py path/to/structure1.txt path/to/structure2.txt
 ```
 
 ### Simple Workflow
@@ -48,6 +56,31 @@ RANDOM_SEED=54321 ./run_tests.sh
    cd ..
    ./install_with_cmake.sh
    cd tests
+   ```
+
+## CIF Processing Tests
+
+The `test_cif_processing.sh` script tests the CIF file preprocessing functionality, which uses ASE (Atomic Simulation Environment) to extract structure data from CIF files.
+
+### Structure Comparison Tool
+
+The `compare_structures.py` script can compare two structure files to verify they represent the same atomic structure, even if atoms are listed in a different order.
+
+```bash
+# Basic comparison
+./compare_structures.py zeoran_data/atom_sites/LTA.txt zeoran_data/atom_sites/LTA_SI.txt
+
+# Adjust bin size for coordinate comparison
+./compare_structures.py --bin-size 0.005 file1.txt file2.txt
+
+# Show detailed comparison output
+./compare_structures.py --verbose file1.txt file2.txt
+```
+
+This tool is particularly useful for:
+1. Validating that CIF preprocessing produces correct structures
+2. Comparing structures generated from different CIF formats
+3. Verifying that symmetry operations are correctly expanded
    ```
 
 5. Run tests again to generate new outputs
