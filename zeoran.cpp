@@ -72,8 +72,32 @@ int main (void) {
 	fin.close();
 
 	//Read zeolite and unit cell
-	file_zeo = "/usr/local/share/zeoran/atom_sites/" + name_zeo + ".txt";
-	file_ucell = "/usr/local/share/zeoran/unit_cell/" + name_zeo + ".txt";
+	string data_dir;
+	
+	// Check for environment variable first
+	char* env_data_dir = getenv("ZEORAN_DATA_DIR");
+	if (env_data_dir != nullptr) {
+		data_dir = string(env_data_dir);
+	} 
+	#ifdef ZEORAN_DATA_DIR
+	// Then check if we have a compiled-in default
+	else {
+		data_dir = string(ZEORAN_DATA_DIR);
+	}
+	#else
+	// Finally fall back to local directory, then standard location
+	else {
+		// Check if we have a local data directory
+		if (access("./zeoran_data/atom_sites", F_OK) == 0) {
+			data_dir = "./zeoran_data";
+		} else {
+			data_dir = "/usr/local/share/zeoran";
+		}
+	}
+	#endif
+	
+	file_zeo = data_dir + "/atom_sites/" + name_zeo + ".txt";
+	file_ucell = data_dir + "/unit_cell/" + name_zeo + ".txt";
 
 	read_unit_cell(file_ucell);
 	list = read_atom_sites(file_zeo);
