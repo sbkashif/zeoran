@@ -1,19 +1,9 @@
 # zeoran
 ZEOlite RANdom generation
 
-This repository is a generalized version of the original `zeoran` software developed by Pablo Romero Marimon for the paper: 
-P. Romero-Marimon *et al.*, "Adsorption of carbon dioxide in non-Löwenstein zeolites".
-
-The generalized version of the software is designed to be more flexible and user-friendly, allowing for easier integration into various workflows and supporting a wider range of file formats. It also includes a comprehensive testing framework to ensure reproducibility and facilitate development. The immediate use of the modified version is to modify the Si/Al ratio in LTA zeolites which were not covered by the original software.
+This repository is a generalized version of the original [zeoran](https://github.com/promerma/zeoran/tree/main) software developed by Pablo Romero Marimon, Eindhoven University of Technology.
 
 ![alt text](https://github.com/promerma/zeoran/blob/main/cover.png)
-
-## Base software author's information
-	Pablo Romero Marimon
-	Eindhoven University of Technology
-	Department of Applied Physics
-	Materials Simulation and Modelling group
-	March 24, 2023
 
 ## Base software description
 
@@ -26,22 +16,12 @@ Main goal of the software is to modify the Si/Al ratio in zeolites. The aluminum
 
 For a detailed description of the algorithms used to generate the zeolite frameworks and the program itself, please check the .pdf file available in this repository.
 
-## Adapted for generalized workflows by:
+## [THIS REPO] Adapted for generalized workflows
 
-```
-Salman Bin Kashif
-Shi Research Group
-Department of Chemical and Biological Engineering
-University at Buffalo
-July 2025
-```
+The generalized version of the software, while keeping the original algorithms for modifying Si/Al ratio intact, is designed to be more flexible and user-friendly, allowing for easier integration into various workflows and supporting a wider range of file formats. It also includes a comprehensive testing framework to ensure reproducibility and facilitate development. The immediate use of the modified version is to modify the Si/Al ratio in LTA zeolites which were not covered by the original software.
 
 
-The modified version of the software, while keeping the original algorithms intact, is designed to be more flexible and user-friendly, allowing for easier integration into various workflows and supporting a wider range of file formats. The immediate use of the modified version is to modify the Si/Al ratio in LTA zeolites which were not covered by the original software.
-
-The corresponding publication information for the LTA zeolite framework will be provided soon.
-
-## Key Features of the Adapted Version
+### Key Features of the Adapted Version
 1. **Automated CIF Preprocessing**: The adapted version uses the Atomic Simulation Environment (ASE) to automatically preprocess CIF files, generating all required internal files and allowing immediate use in the `generate.input` file.
 2. **Modern CMake Build System**: A modern CMake-based build system has been implemented, allowing for:
    - Cross-platform compatibility
@@ -57,7 +37,7 @@ The corresponding publication information for the LTA zeolite framework will be 
 
 Once you have installed the prerequisites, please update the required paths in the `install_with_cmake.sh` script. Key inputs include:
 - PREFIX: The prefix path where the software will be installed (default is `/usr/local`).
-- DEPENDENCY_PATH: The path to the Eigen library (default is `/usr/local/include/eigen3`).
+- EIGEN_PATH: The path to the Eigen library (default is `/usr/local/include/eigen3`).
 
 Please refer to the [install_with_cmake.sh](install_with_cmake.sh) script for the exact lines to modify.
 
@@ -66,24 +46,25 @@ Please refer to the [install_with_cmake.sh](install_with_cmake.sh) script for th
 To install the software, run the following commands:
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/zeoran.git
+git clone https://github.com/sbkashif/zeoran.git
 cd zeoran
 ./install_with_cmake.sh
 ```
 
-## Basic usage for existing zeolite frameworks
+## Running an EXISTING zeolite framework
 
 To run the software with an existing zeolite framework, you need to create a `generate.input` file with the required parameters. The basic structure of the `generate.input` is discussed in a [later section](#structure-of-generate.input) of this README.
 
+Assumption: The zeolite framework is defined in `zeoran_data/atom_sites` and `zeoran_data/unit_cell`, and the `generate.input` file is properly configured.
+
 ```bash
 # Run the software with an existing zeolite framework
-# Assumption: The zeolite framework is defined in zeolite_data/atom_sites and zeolite_data/unit_cell, and the `generate.input` file is properly configured
 ./build/zeoran
 ```
 
-## Demo workflow for a new zeolite framework
+## Running a NEW zeolite framework
 
-Working with a new zeolite framework required reinstallation of the software. Starting with v2.0 of the software, generation of required files in `zeoran_data/atom_sites` and `zeoran_data/unit_cell` directories is automated by utilizing the Atomic Simulation Environment (ASE). This allows users to easily set up their zeolite framework without manual file handling.
+Working with a new zeolite framework requires reinstallation of the software. Starting with v2.0, generation of required files in `zeoran_data/atom_sites` and `zeoran_data/unit_cell` directories is automated by utilizing the Atomic Simulation Environment (ASE). This allows users to easily set up their zeolite framework instead of manually providing the necessary files.
 
 Following is a complete workflow script for a new zeolite framework:
 
