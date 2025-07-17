@@ -53,7 +53,7 @@ cd zeoran
 
 ## Running an EXISTING zeolite framework
 
-To run the software with an existing zeolite framework, you need to create a `generate.input` file with the required parameters. The basic structure of the `generate.input` is discussed in a [later section](#structure-of-generate.input) of this README.
+To run the software with an existing zeolite framework, you need to create a `generate.input` file with the required parameters. The basic structure of the `generate.input` is discussed in [Structure of generate.input](#structure-of-generateinput) section.
 
 Assumption: The zeolite framework is defined in `zeoran_data/atom_sites` and `zeoran_data/unit_cell`, and the `generate.input` file is properly configured.
 
