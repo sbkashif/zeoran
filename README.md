@@ -16,7 +16,7 @@ Main goal of the software is to modify the Si/Al ratio in zeolites. The aluminum
 
 For a detailed description of the algorithms used to generate the zeolite frameworks and the program itself, please check the .pdf file available in this repository.
 
-## [THIS REPO] Adapted for generalized workflows
+## 🚀 [This REPO] Adapted for generalized workflows
 
 The generalized version of the software, while keeping the original algorithms for modifying Si/Al ratio intact, is designed to be more flexible and user-friendly, allowing for easier integration into various workflows and supporting a wider range of file formats. It also includes a comprehensive testing framework to ensure reproducibility and facilitate development. The immediate use of the modified version is to modify the Si/Al ratio in LTA zeolites which were not covered by the original software.
 
