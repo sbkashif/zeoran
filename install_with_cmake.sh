@@ -8,7 +8,19 @@
 PREFIX="$(pwd)/build"  # Installation will occur in the build directory
 EIGEN_PATH="/projects/academic/kaihangs/salmanbi/software/eigen-3.4.0"  # Default Eigen path
 
+# Define default install and eigen paths if not provided
+if [ -z "$PREFIX" ]; then
+    PREFIX="/usr/local"
+    echo "Using default PREFIX: $PREFIX"
+fi
+if [ -z "$EIGEN_PATH" ]; then
+    EIGEN_PATH="/usr/local/include/eigen3"
+    echo "Using default EIGEN_PATH: $EIGEN_PATH"
+fi
+
+
 # Clone the repository
+
 echo "Using the repository path: /projects/academic/kaihangs/salmanbi/software/zeoran"
 cd /projects/academic/kaihangs/salmanbi/software/zeoran || { echo "Failed to enter repository directory. Exiting."; exit 1; }
 
