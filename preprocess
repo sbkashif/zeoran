@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+"""
+Zeoran Universal Preprocessor
+
+This script automatically detects the input file type and calls the appropriate
+preprocessor with the correct requirements.
+
+Usage:
+    preprocess -i <input_file> -n <zeolite_name> [-c <config_file>]
+
+Supported file types:
+    .cif    - CIF files (config file optional)
+    .gro    - GROMACS files (config file required)
+
+Examples:
+    preprocess -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI
+    preprocess -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI -c config.yaml
+    preprocess -i structure.gro -n MY_ZEOLITE -c config.yaml
+
+Author: GitHub Copilot
+Date: July 21, 2025
+"""
+
+import os
+import sys
+import subprocess
+import argparse
+from pathlib import Path
+
+def create_parser():
+    """Create command line argument parser"""
+    parser = argparse.ArgumentParser(
+        description='Zeoran Universal Preprocessor - Automatically detects and processes input files',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI
+  %(prog)s -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI -c config.yaml
+  %(prog)s -i structure.gro -n MY_ZEOLITE -c config.yaml
+
+Supported file types:
+  .cif    CIF files (config file optional)
+  .gro    GROMACS files (config file required)
+
+Config file requirements:
+  CIF files: Optional - can override unit cell parameters or provide charges
+  GRO files: Required - must provide unit cell parameters and optionally charges
+        """
+    )
+    
+    parser.add_argument('-i', '--input', 
+                       required=True,
+                       help='Input structure file (.cif or .gro)')
+    
+    parser.add_argument('-n', '--name', 
+                       required=True,
+                       help='Zeolite name for output files')
+    
+    parser.add_argument('-c', '--config', 
+                       help='Configuration file (YAML format)')
+    
+    parser.add_argument('-v', '--verbose', 
+                       action='store_true',
+                       help='Enable verbose output')
+    
+    return parser
+
+def print_usage():
+    """Print usage information"""
+    print("Usage: preprocess -i <input_file> -n <zeolite_name> [-c <config_file>]")
+    print("")
+    print("Supported file types:")
+    print("  .cif    - CIF files (config file optional)")
+    print("  .gro    - GROMACS files (config file required)")
+    print("")
+    print("Examples:")
+    print("  preprocess -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI")
+    print("  preprocess -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI -c config.yaml")
+    print("  preprocess -i structure.gro -n MY_ZEOLITE -c config.yaml")
+
+def find_preprocessor_script(script_name):
+    """Find the preprocessor script in various locations"""
+    # Check current directory first
+    if os.path.exists(script_name):
+        return script_name
+    
+    # Check if we're in the zeoran repo directory
+    if os.path.exists(f"./{script_name}"):
+        return f"./{script_name}"
+    
+    # Check if script is in PATH (installed globally)
+    try:
+        result = subprocess.run(['which', script_name], capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except:
+        pass
+    
+    # Check in the same directory as this script
+    script_dir = Path(__file__).parent
+    script_path = script_dir / script_name
+    if script_path.exists():
+        return str(script_path)
+    
+    return None
+
+def main():
+    # Parse command line arguments
+    parser = create_parser()
+    args = parser.parse_args()
+    
+    input_file = args.input
+    zeolite_name = args.name
+    config_file = args.config
+    verbose = args.verbose
+    
+    # Check if input file exists
+    if not os.path.exists(input_file):
+        print(f"Error: Input file '{input_file}' not found")
+        sys.exit(1)
+    
+    # Detect file type
+    file_extension = Path(input_file).suffix.lower()
+    
+    print("================================================")
+    print("Zeoran Universal Preprocessor")
+    print("================================================")
+    print(f"Input file: {input_file}")
+    print(f"File type: {file_extension}")
+    print(f"Zeolite name: {zeolite_name}")
+    if config_file:
+        print(f"Config file: {config_file}")
+    if verbose:
+        print(f"Verbose mode: enabled")
+    print("================================================")
+    
+    if file_extension == '.cif':
+        # CIF file processing
+        print("Processing CIF file...")
+        
+        # Find the CIF preprocessor
+        cif_preprocessor = find_preprocessor_script('preprocess_cif.py')
+        if not cif_preprocessor:
+            print("Error: preprocess_cif.py not found")
+            print("Please ensure the CIF preprocessor is available")
+            sys.exit(1)
+        
+        # Build command
+        cmd = ['python3', cif_preprocessor, input_file, zeolite_name]
+        if config_file:
+            cmd.append(config_file)
+            print(f"Using config file: {config_file}")
+        else:
+            print("No config file provided (optional for CIF files)")
+        
+    elif file_extension == '.gro':
+        # GRO file processing
+        print("Processing GRO file...")
+        
+        # GRO files require a config file
+        if not config_file:
+            print("Error: GRO files require a config file")
+            print("")
+            print("GRO files do not contain all necessary information.")
+            print("Please provide a YAML config file with:")
+            print("  - Unit cell parameters")
+            print("  - Charge information (optional)")
+            print("")
+            print("Example:")
+            print(f"  preprocess -i {input_file} -n {zeolite_name} -c config.yaml")
+            sys.exit(1)
+        
+        if not os.path.exists(config_file):
+            print(f"Error: Config file '{config_file}' not found")
+            sys.exit(1)
+        
+        # Find the GRO preprocessor
+        gro_preprocessor = find_preprocessor_script('preprocess_gro.py')
+        if not gro_preprocessor:
+            print("Error: preprocess_gro.py not found")
+            print("Please ensure the GRO preprocessor is available")
+            sys.exit(1)
+        
+        # Build command
+        cmd = ['python3', gro_preprocessor, input_file, config_file, zeolite_name]
+        print(f"Using required config file: {config_file}")
+        
+    else:
+        print(f"Error: Unsupported file type '{file_extension}'")
+        print("")
+        print("Supported file types:")
+        print("  .cif - CIF files")
+        print("  .gro - GROMACS files")
+        print("")
+        print("Use -h or --help for usage information")
+        sys.exit(1)
+    
+    # Execute the appropriate preprocessor
+    print("")
+    if verbose:
+        print("Executing:", ' '.join(cmd))
+    else:
+        print("Executing preprocessor...")
+    print("------------------------------------------------")
+    
+    try:
+        if verbose:
+            result = subprocess.run(cmd, check=True)
+        else:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+        
+        print("------------------------------------------------")
+        print("✅ Preprocessing completed successfully!")
+        print(f"You can now use '{zeolite_name}' in your generate.input file.")
+        print("")
+        print("Next steps:")
+        print("  1. Create or edit generate.input file")
+        print("  2. Run: zeoran")
+        
+    except subprocess.CalledProcessError as e:
+        print("------------------------------------------------")
+        print("❌ Preprocessing failed!")
+        if verbose:
+            print(f"Command exited with code: {e.returncode}")
+        if hasattr(e, 'stderr') and e.stderr:
+            print("Error output:")
+            print(e.stderr)
+        sys.exit(1)
+    except FileNotFoundError:
+        print("❌ Error: Python3 not found or preprocessor script missing")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
