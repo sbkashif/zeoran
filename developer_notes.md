@@ -495,3 +495,227 @@ For detailed information on using the test framework, refer to the `tests/README
 - Troubleshooting guidance for common testing issues
 
 This testing infrastructure forms the foundation for future development and ensures that any modifications to the core algorithms can be thoroughly validated.
+
+## Recent Updates: Format-Agnostic Preprocessing System
+
+A major enhancement has been added to support format-agnostic input processing and flexible configuration management, significantly expanding the software's usability beyond the original zeoran data format.
+
+### CIF File Preprocessing
+
+The software now includes a comprehensive CIF file preprocessor (`preprocess_cif.py`) that automatically converts CIF files into the zeoran data format:
+
+```bash
+python preprocess_cif.py input_file.cif ZEOLITE_NAME [config_file.yaml]
+```
+
+**Key Features:**
+- **Automatic Format Conversion**: Converts CIF crystallographic data to zeoran's atom_sites and unit_cell formats
+- **Self-Contained Operation**: CIF files work standalone without requiring additional configuration
+- **Optional Configuration Override**: YAML config files can supplement or override CIF data
+- **Charge Priority System**: Implements a clear hierarchy: config file > CIF file > zeros
+- **ASE Library Integration**: Uses the Atomic Simulation Environment for robust CIF parsing
+- **Intelligent T-atom Detection**: Automatically identifies Si atoms as substitution candidates
+
+**Charge Handling:**
+The preprocessor implements a sophisticated charge management system:
+1. **Config File Charges** (highest priority): If provided via YAML config, these override all other sources
+2. **CIF File Charges** (medium priority): If present in the original CIF file, these are preserved
+3. **Zero Charges** (fallback): If no charge information is available, zeros are used without failure
+
+### GRO File Preprocessing
+
+Support for GROMACS GRO file format has been added (`preprocess_gro.py`) with mandatory YAML configuration:
+
+```bash
+python preprocess_gro.py input_file.gro config_file.yaml ZEOLITE_NAME
+```
+
+**Key Features:**
+- **GROMACS Compatibility**: Supports standard GRO coordinate format
+- **Mandatory Configuration**: Requires YAML config for cell parameters and charges
+- **Flexible Charge Assignment**: Optional charges with graceful fallback to zeros
+- **Periodic Boundary Support**: Handles box vectors and periodic boundary conditions
+
+### Configuration System
+
+A flexible YAML-based configuration system supports both preprocessing workflows:
+
+```yaml
+# Example configuration file
+cell_parameters:
+  a: 24.555
+  b: 24.555  
+  c: 24.555
+  alpha: 90.0
+  beta: 90.0
+  gamma: 90.0
+
+charges:
+  Si: 1.500000
+  O: -0.750000
+  Al: 1.500000  # Used when Si is substituted with Al
+
+# Optional: Override atomic positions or add metadata
+metadata:
+  description: "Custom zeolite configuration"
+  source: "Experimental data"
+```
+
+### Enhanced User Interface
+
+The main zeoran executable now displays helpful usage information:
+
+```
+=================================================
+ZEORAN - ZEOlite RANdom generation
+Version: 2.0 (July 2025)
+=================================================
+Note: You can now use the preprocess_cif.py script to
+automatically process CIF files for use with zeoran:
+  python preprocess_cif.py your_file.cif ZEOLITE_NAME
+=================================================
+```
+
+### Workflow Integration
+
+The preprocessing system integrates seamlessly with the existing zeoran workflow:
+
+1. **Preprocessing Phase**: Convert external formats (CIF/GRO) to zeoran format
+   ```bash
+   python preprocess_cif.py structure.cif MY_ZEOLITE
+   ```
+
+2. **Generation Phase**: Use standard zeoran workflow with preprocessed data
+   ```bash
+   # Create generate.input with MY_ZEOLITE as zeolite name
+   ./zeoran  # or build/bin/zeoran
+   ```
+
+3. **Output Phase**: Standard CIF output files with proper charge assignments
+
+### Technical Implementation
+
+**No Core Modification Approach:**
+The preprocessing system was designed to work with the existing zeoran codebase without requiring modifications to the core algorithms. The `read_unit_cell()` and `read_atom_sites()` functions remain unchanged, ensuring full backward compatibility.
+
+**Extended Format Support:**
+While an extended zeoran format was developed to support richer metadata, the final implementation uses the preprocessor-only approach to maintain simplicity and avoid the need for core code changes.
+
+**Robust Error Handling:**
+The preprocessing scripts include comprehensive error handling for:
+- Invalid file formats
+- Missing configuration parameters  
+- Inconsistent charge assignments
+- File I/O errors
+- ASE library integration issues
+
+### Benefits of the New System
+
+1. **Format Flexibility**: Support for multiple input formats without changing core algorithms
+2. **No Reinstallation Required**: Adding new zeolites doesn't require recompiling zeoran
+3. **Configuration Transparency**: Clear separation between input data and processing parameters
+4. **Backward Compatibility**: Existing zeoran data files continue to work unchanged
+5. **Extensibility**: Easy to add support for additional file formats
+6. **Charge Management**: Sophisticated handling of charge information with clear priorities
+7. **Self-Contained Operation**: CIF files can be processed without requiring external configuration
+
+This enhancement significantly improves the software's accessibility and utility for researchers working with diverse crystallographic data sources while maintaining the robust algorithm performance that makes zeoran valuable for zeolite research.
+
+## Recent Updates: Flexible Data Directory Management
+
+The data directory system has been refined to provide maximum flexibility while maintaining simplicity in the core zeoran source code. The approach separates concerns between simple source code logic and flexible deployment via environment variables and workflow scripts.
+
+### Simple Source Code Approach
+
+The zeoran executable uses a straightforward priority system for locating data files:
+
+```cpp
+// Priority order for finding data files:
+// 1. Local directories: ./atom_sites/ and ./unit_cell/
+// 2. Environment variable: ZEORAN_DATA_DIR
+// 3. Build directory: ./build/share/zeoran/
+// 4. System install: /usr/local/share/zeoran/
+
+string local_atom_sites = "./atom_sites/" + name_zeo + ".txt";
+if (access(local_atom_sites.c_str(), F_OK) == 0) {
+    file_zeo = local_atom_sites;
+    cout << "Using local atom_sites file: " << file_zeo << endl;
+} else {
+    // Fall back to install location via environment variable or build directory
+    char* env_data_dir = getenv("ZEORAN_DATA_DIR");
+    if (env_data_dir != nullptr) {
+        install_data_dir = string(env_data_dir);
+    }
+    // ... additional fallback logic
+}
+```
+
+### Flexible Deployment Strategies
+
+**1. Local Directory Approach (Highest Priority):**
+```bash
+mkdir atom_sites unit_cell
+# Copy zeolite files to local directories
+./zeoran  # Uses local directories directly
+```
+
+**2. Environment Variable Approach:**
+```bash
+export ZEORAN_DATA_DIR=/path/to/your/data
+./zeoran  # Uses custom data directory
+```
+
+**3. Organized Repository Structure:**
+```bash
+# Demo workflow sets ZEORAN_DATA_DIR to repo's zeoran_data/
+ZEORAN_DATA_DIR="$(pwd)/zeoran_data" ./zeoran
+```
+
+**4. Build Directory Fallback:**
+```bash
+# Automatic fallback when no local files or environment variable
+./zeoran  # Uses ./build/share/zeoran/ or /usr/local/share/zeoran/
+```
+
+### Demo Workflow Integration
+
+The `demo_workflow.sh` script exemplifies the flexible approach by setting the environment variable to maintain organized file structure:
+
+```bash
+# Get absolute path to the repo directory for zeoran_data
+REPO_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# Set ZEORAN_DATA_DIR to point to repo's zeoran_data for organized structure
+export ZEORAN_DATA_DIR="$REPO_DIR/zeoran_data"
+echo "Setting ZEORAN_DATA_DIR to: $ZEORAN_DATA_DIR"
+
+# Run zeoran with organized data directory
+./build/bin/zeoran
+```
+
+### Benefits of the Flexible System
+
+1. **Simple Source Code**: No complex path detection logic in zeoran.cpp
+2. **Multiple Usage Patterns**: Supports different deployment scenarios
+3. **Organized Development**: Repo maintains structured zeoran_data/ organization
+4. **Flexible Deployment**: Environment variable allows any custom location
+5. **Reliable Fallback**: Always has build directory as backup
+6. **No Reinstallation**: Adding new zeolites doesn't require recompilation
+7. **Clear Priority**: Predictable file location resolution
+
+### Installation and Data File Management
+
+The CMake build system automatically installs zeolite data files:
+
+```cmake
+install(DIRECTORY zeoran_data/atom_sites DESTINATION share/zeoran)
+install(DIRECTORY zeoran_data/unit_cell DESTINATION share/zeoran)
+```
+
+**Installation Flow:**
+1. **Build Time**: `zeoran_data/` → `build/share/zeoran/`
+2. **Runtime Priority**: Local → Environment → Build → System
+3. **Preprocessing**: CIF files → `zeoran_data/` structure
+4. **Execution**: Environment variable points to organized structure
+
+This architecture provides the flexibility users need while keeping the core algorithms simple and maintainable. The preprocessing system writes to organized directories, the build system installs data files appropriately, and the runtime system locates files through a clear priority hierarchy.

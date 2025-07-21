@@ -22,17 +22,71 @@ make install PREFIX="$PREFIX" || { echo "Installation failed. Exiting."; exit 1;
 
 # Verify installation
 if [ -f "$PREFIX/bin/zeoran" ]; then
-    echo "Installation successful!"
-    echo "Refer to the executable at $PREFIX/bin/zeoran"
+    echo "================================================="
+    echo "✅ Installation successful!"
+    echo "================================================="
+    echo "Zeoran executable installed at: $PREFIX/bin/zeoran"
+    echo ""
     
-    # Check for preprocessing script
+    # Add to PATH for current session and provide instructions for permanent addition
+    ZEORAN_BIN_DIR="$PREFIX/bin"
+    echo "Adding zeoran to PATH for current session..."
+    export PATH="$ZEORAN_BIN_DIR:$PATH"
+    
+    echo ""
+    echo "🔧 To make zeoran globally accessible:"
+    echo "   Add the following line to your ~/.bashrc or ~/.bash_profile:"
+    echo "   export PATH=\"$ZEORAN_BIN_DIR:\$PATH\""
+    echo ""
+    echo "   Then run: source ~/.bashrc"
+    echo ""
+    echo "🧪 After adding to PATH, you can run zeoran from anywhere:"
+    echo "   zeoran"
+    echo ""
+    echo "📁 Data files installed at: $PREFIX/share/zeoran/"
+    
+    # Install preprocessing scripts to make them globally accessible
     if [ -f "preprocess_cif.py" ]; then
         echo ""
-        echo "CIF Preprocessing: You can use the preprocessing script to prepare CIF files:"
-        echo "  python preprocess_cif.py path/to/your/file.cif ZEOLITE_NAME"
+        echo "Installing preprocessors..."
+        
+        # Install individual preprocessors
+        cp "preprocess_cif.py" "$PREFIX/bin/"
+        chmod +x "$PREFIX/bin/preprocess_cif.py"
+        
+        if [ -f "preprocess_gro.py" ]; then
+            cp "preprocess_gro.py" "$PREFIX/bin/"
+            chmod +x "$PREFIX/bin/preprocess_gro.py"
+        fi
+        
+        # Install universal preprocessor
+        if [ -f "preprocess" ]; then
+            cp "preprocess" "$PREFIX/bin/"
+            chmod +x "$PREFIX/bin/preprocess"
+        fi
+        
         echo ""
-        echo "After preprocessing, use ZEOLITE_NAME in your generate.input file."
+        echo "📄 Universal Preprocessor (recommended):"
+        echo "   preprocess -i file.cif -n ZEOLITE_NAME           # CIF files"
+        echo "   preprocess -i file.gro -n ZEOLITE_NAME -c config.yaml  # GRO files"
+        echo "   preprocess --help                               # Show all options"
+        echo ""
+        echo "📄 Individual Preprocessors also available:"
+        echo "   preprocess_cif.py file.cif ZEOLITE_NAME [config.yaml]"
+        echo "   preprocess_gro.py file.gro config.yaml ZEOLITE_NAME"
+        echo ""
+        echo "   After preprocessing, use ZEOLITE_NAME in your generate.input file."
     fi
+    
+    echo ""
+    echo "🚀 Quick test (from this directory):"
+    echo "   ./bin/zeoran"
+    echo "   or if you added to PATH: zeoran"
+    echo ""
+    echo "🧪 Complete workflow test:"
+    echo "   preprocess -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI"
+    echo "   zeoran"
+    echo "================================================="
 else
     echo "Installation verification failed. Please check the output for errors."
     exit 1

@@ -19,30 +19,42 @@ fi
 CIF_FILE=$1
 ZEOLITE_NAME=$2
 
+# Get absolute path to the repo directory for zeoran_data
+REPO_DIR=$(cd "$(dirname "$0")" && pwd)
+
 echo "Step 1: Preprocessing CIF file"
 echo "-------------------------------------------------"
 python preprocess_cif.py "$CIF_FILE" "$ZEOLITE_NAME"
 echo ""
 
-# Choose installation method
-echo "Step 2: Installing zeoran"
+# Check if zeoran needs to be built
+echo "Step 2: Checking zeoran installation"
 echo "-------------------------------------------------"
-echo "Select installation method:"
-echo "1) CMake (recommended)"
-echo "2) Traditional Make"
-read -p "Enter choice [1]: " INSTALL_CHOICE
 
-if [ -z "$INSTALL_CHOICE" ] || [ "$INSTALL_CHOICE" = "1" ]; then
-    echo "Using CMake installation..."
-    ./install_with_cmake.sh
-elif [ "$INSTALL_CHOICE" = "2" ]; then
-    echo "Using traditional Make installation..."
-    ./install_traditional_make.sh
+# Check if zeoran is already built
+if [ -f "./build/bin/zeoran" ]; then
+    echo "✓ Zeoran is already built and ready to use."
+    echo "  (No reinstallation needed when processing new CIF files)"
+    echo ""
 else
-    echo "Invalid choice. Exiting."
-    exit 1
+    echo "Zeoran not found. Building for first time..."
+    echo "Select installation method:"
+    echo "1) CMake (recommended)"
+    echo "2) Traditional Make"
+    read -p "Enter choice [1]: " INSTALL_CHOICE
+    
+    if [ -z "$INSTALL_CHOICE" ] || [ "$INSTALL_CHOICE" = "1" ]; then
+        echo "Using CMake installation..."
+        ./install_with_cmake.sh
+    elif [ "$INSTALL_CHOICE" = "2" ]; then
+        echo "Using traditional Make installation..."
+        ./install_traditional_make.sh
+    else
+        echo "Invalid choice. Exiting."
+        exit 1
+    fi
+    echo ""
 fi
-echo ""
 
 # Create input file
 echo "Step 3: Setting up generate.input file"
@@ -137,15 +149,20 @@ else
 fi
 
 echo ""
-echo "Running zeoran with extra error handling..."
+echo "Running zeoran..."
 
-# Make sure the ZEORAN_DATA_DIR environment variable is set
-export ZEORAN_DATA_DIR=$(pwd)/zeoran_data
-echo "Setting ZEORAN_DATA_DIR to: $ZEORAN_DATA_DIR"
+# Let zeoran use its natural data directory priority:
+# 1. Current directory (./zeoran_data/) - for newly processed CIF files
+# 2. Install location (build/share/zeoran/) - for standard zeolite database
+# This means no reinstallation needed when processing new CIF files locally
 
 # Try to run zeoran normally first
 if [ -f "build/bin/zeoran" ]; then
     echo "Found zeoran in build/bin"
+    
+    # Set ZEORAN_DATA_DIR to point to repo's zeoran_data for organized structure
+    export ZEORAN_DATA_DIR="$REPO_DIR/zeoran_data"
+    echo "Setting ZEORAN_DATA_DIR to: $ZEORAN_DATA_DIR"
     
     # Run from current directory to ensure paths are correct
     echo "Attempting to run zeoran normally..."
@@ -161,10 +178,10 @@ if [ -f "build/bin/zeoran" ]; then
         # Check if gdb is available
         if command -v gdb &> /dev/null; then
             echo "Running with gdb to debug the crash:"
-            echo "run" | gdb -q ./zeoran_debug
+            ZEORAN_DATA_DIR="$REPO_DIR/zeoran_data" echo "run" | gdb -q ./zeoran_debug
         else
             echo "GDB not available, running with extra verbosity:"
-            ZEORAN_DEBUG=1 ./zeoran_debug < <(echo "yes")
+            ZEORAN_DATA_DIR="$REPO_DIR/zeoran_data" ZEORAN_DEBUG=1 ./zeoran_debug < <(echo "yes")
         fi
         rm -f ./zeoran_debug
     else

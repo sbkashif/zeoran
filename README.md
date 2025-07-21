@@ -23,12 +23,17 @@ The generalized version of the software, while keeping the original algorithms f
 
 ### Key Features of the Adapted Version
 1. **Automated CIF Preprocessing**: The adapted version uses the Atomic Simulation Environment (ASE) to automatically preprocess CIF files, generating all required internal files and allowing immediate use in the `generate.input` file.
-2. **Modern CMake Build System**: A modern CMake-based build system has been implemented, allowing for:
+2. **Flexible Data Directory Management**: The software supports multiple data directory configurations:
+   - **Local directories**: Direct `atom_sites/` and `unit_cell/` directories in the run location
+   - **Environment variable**: `ZEORAN_DATA_DIR` for custom data locations
+   - **Organized repo structure**: `zeoran_data/` directory for structured file organization
+   - **Build directory fallback**: Automatic fallback to installation directory
+3. **Modern CMake Build System**: A modern CMake-based build system has been implemented, allowing for:
    - Cross-platform compatibility
    - Dependency management
    - Static linking for high-performance computing environments
-3. **Interactive Demo Workflow**: A complete demo workflow script is provided to guide new users through the process of running the software, setting up input parameters, and executing zeoran with their configuration.
-4. **Comprehensive Testing Framework**: A robust testing infrastructure has been added to ensure reproducible results and facilitate development. The framework includes fixed random seed support, benchmark inputs, reference outputs, and comparison tools. This ensures that algorithm behavior remains consistent across code changes and allows for regression testing when implementing new features or optimizations.
+4. **Interactive Demo Workflow**: A complete demo workflow script is provided to guide new users through the process of running the software, setting up input parameters, and executing zeoran with their configuration.
+5. **Comprehensive Testing Framework**: A robust testing infrastructure has been added to ensure reproducible results and facilitate development. The framework includes fixed random seed support, benchmark inputs, reference outputs, and comparison tools. This ensures that algorithm behavior remains consistent across code changes and allows for regression testing when implementing new features or optimizations.
 
 ## Prerequisites
 - CMake (version 3.10 or higher)
@@ -55,29 +60,62 @@ cd zeoran
 
 To run the software with an existing zeolite framework, you need to create a `generate.input` file with the required parameters. The basic structure of the `generate.input` is discussed in [Structure of generate.input](#structure-of-generateinput) section.
 
-Assumption: The zeolite framework is defined in `zeoran_data/atom_sites` and `zeoran_data/unit_cell`, and the `generate.input` file is properly configured.
+The software supports flexible data directory configurations:
+- **Local directories**: Place `atom_sites/` and `unit_cell/` directories in your run location
+- **Environment variable**: Set `ZEORAN_DATA_DIR` to point to your data directory
+- **Repo structure**: Use organized `zeoran_data/atom_sites/` and `zeoran_data/unit_cell/` structure
+- **Build fallback**: Automatic fallback to installation directory
 
 ```bash
-# Run the software with an existing zeolite framework
-./build/zeoran
+# Run with local directories (highest priority)
+mkdir atom_sites unit_cell
+# copy your zeolite files...
+./build/bin/zeoran
+
+# Run with environment variable
+export ZEORAN_DATA_DIR=/path/to/your/data
+./build/bin/zeoran
+
+# Run from repo with organized structure
+ZEORAN_DATA_DIR="$(pwd)/zeoran_data" ./build/bin/zeoran
 ```
 
 ## Running a NEW zeolite framework
 
-Working with a new zeolite framework requires reinstallation of the software. Starting with v2.0, generation of required files in `zeoran_data/atom_sites` and `zeoran_data/unit_cell` directories is automated by utilizing the Atomic Simulation Environment (ASE). This allows users to easily set up their zeolite framework instead of manually providing the necessary files.
+Working with a new zeolite framework does **NOT** require reinstallation of the software. Starting with v2.0, generation of required files in `zeoran_data/atom_sites` and `zeoran_data/unit_cell` directories is automated by utilizing the Atomic Simulation Environment (ASE). This allows users to easily set up their zeolite framework instead of manually providing the necessary files.
 
-Following is a complete workflow script for a new zeolite framework:
+### Quick workflow for a new zeolite:
+
+1. **Preprocess your CIF file**:
+   ```bash
+   python preprocess_cif.py path/to/your/file.cif ZEOLITE_NAME
+   ```
+
+2. **Update generate.input** with your zeolite name:
+   ```bash
+   # Edit generate.input to use ZEOLITE_NAME as the first line
+   ```
+
+3. **Run zeoran** (no reinstallation needed):
+   ```bash
+   ./build/bin/zeoran
+   ```
+
+### Complete automated workflow:
+
+The demo workflow script handles data directory organization automatically:
 
 ```bash
-# Run the interactive demo
+# Run the interactive demo (includes preprocessing and execution)
 ./demo_workflow.sh path/to/your/file.cif ZEOLITE_NAME
 ```
 This demo script:
 
-1. Preprocesses your CIF file to generate the necessary internal files
-2. Rebuilds the software with the new zeolite framework
-3. Generates the `generate.input` file with the required parameters
-4. Runs zeoran with your configuration
+1. Preprocesses your CIF file to generate the necessary internal files in the `zeoran_data/` structure
+2. Sets the appropriate `ZEORAN_DATA_DIR` environment variable for organized file management
+3. Rebuilds the software with the new zeolite framework (optional)
+4. Generates the `generate.input` file with the required parameters
+5. Runs zeoran with your configuration using the organized data directory structure
 
 
 ### Structure of generate.input
