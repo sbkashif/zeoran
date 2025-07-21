@@ -19,5 +19,3 @@ int merw_step(double **S, vector<vector<int> > neigbrs, int i);
 bool in(int index, vector<int> Als);
 //Generate Al substitutions: random
 vector<int> generate_random (int Nsubst);
-//Print generated structure
-void print_structure (atom *list, vector<int> Als, int struc, string name_zeo, string name_alg, string out_name);

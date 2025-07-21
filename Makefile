@@ -50,9 +50,9 @@ setup:
 	@cp -r zeoran_data/unit_cell/* $(DATA_DIR)/unit_cell/ 2>/dev/null || true
 
 # Compile the main program
-$(BIN_DIR)/zeoran: zeoran.cpp global.h headers.h libraries.h
+$(BIN_DIR)/zeoran: zeoran.cpp output.cpp globals.cpp global.h headers.h libraries.h output.h
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $< -o $@ $(CXXINCLUDES) $(LDFLAGS) -DZEORAN_DATA_DIR=\"$(INSTALL_DATA_DIR)\"
+	$(CXX) $(CXXFLAGS) zeoran.cpp output.cpp globals.cpp -o $@ $(CXXINCLUDES) $(LDFLAGS) -DZEORAN_DATA_DIR=\"$(INSTALL_DATA_DIR)\"
 
 # System-wide installation (optional)
 install:

@@ -31,13 +31,23 @@ for ref_dir in benchmark_reference/*; do
                     continue
                 fi
                 
-                # Compare the files
-                if diff -q "$ref_file" "$out_file" > /dev/null; then
-                    echo "  PASS: $file_name matches reference"
+                # Compare the files, ignoring date and author name lines
+                temp_ref=$(mktemp)
+                temp_out=$(mktemp)
+                
+                # Filter out the audit date and author lines before comparison
+                grep -v "_audit_creation_date" "$ref_file" | grep -v "_audit_author_name" > "$temp_ref"
+                grep -v "_audit_creation_date" "$out_file" | grep -v "_audit_author_name" > "$temp_out"
+                
+                if diff -q "$temp_ref" "$temp_out" > /dev/null; then
+                    echo "  PASS: $file_name matches reference (ignoring metadata)"
                 else
                     echo "  FAIL: $file_name differs from reference"
                     differences=$((differences + 1))
                 fi
+                
+                # Clean up temporary files
+                rm -f "$temp_ref" "$temp_out"
             fi
         done
         

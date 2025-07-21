@@ -22,9 +22,12 @@ include_directories(${EIGEN_PATH})
 # Source files
 set(SOURCES
     zeoran.cpp
+    output.cpp
+    globals.cpp
     global.h
     headers.h
     libraries.h
+    output.h
 )
 
 # Output directories

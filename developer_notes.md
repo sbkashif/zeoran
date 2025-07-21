@@ -719,3 +719,152 @@ install(DIRECTORY zeoran_data/unit_cell DESTINATION share/zeoran)
 4. **Execution**: Environment variable points to organized structure
 
 This architecture provides the flexibility users need while keeping the core algorithms simple and maintainable. The preprocessing system writes to organized directories, the build system installs data files appropriately, and the runtime system locates files through a clear priority hierarchy.
+
+## Recent Updates: Modular Code Refactoring
+
+To improve code maintainability and organization, the zeoran codebase has undergone significant modular refactoring. This work separates concerns and creates a cleaner architecture while maintaining full backward compatibility.
+
+### Output Module Extraction
+
+The output writing functionality has been extracted from the main `zeoran.cpp` file into a dedicated module:
+
+**New Files Created:**
+- `output.h` - Header file with output function declarations
+- `output.cpp` - Implementation of output writing functionality
+- `globals.cpp` - Global variable definitions (separated from declarations)
+
+**Key Changes:**
+1. **Separation of Concerns**: Output formatting logic is now isolated from algorithm logic
+2. **Dynamic Metadata**: Output files now use current user name and date instead of hardcoded values
+3. **Proper Global Variable Management**: Variables are now declared in headers with `extern` and defined in a separate source file
+
+### Dynamic Metadata Generation
+
+The output module now generates dynamic metadata for CIF files:
+
+```cpp
+// Get current date
+time_t rawtime;
+struct tm * timeinfo;
+char date_buffer[80];
+time(&rawtime);
+timeinfo = localtime(&rawtime);
+strftime(date_buffer, sizeof(date_buffer), "%Y-%m-%d", timeinfo);
+
+// Get current user name
+const char* username = getenv("USER");
+if (username == nullptr) {
+    username = getenv("USERNAME"); // Windows fallback
+    if (username == nullptr) {
+        username = "unknown_user";
+    }
+}
+
+// Write to CIF file
+fout << "_audit_creation_date " << date_buffer << endl;
+fout << "_audit_author_name '" << username << "'" << endl;
+```
+
+**Benefits:**
+- **Accurate Timestamps**: Files reflect when they were actually generated
+- **User Tracking**: Clear attribution of who generated each structure
+- **Cross-Platform Support**: Works on both Unix/Linux and Windows systems
+
+### Global Variable Architecture
+
+To resolve multiple definition issues during compilation, global variables have been restructured:
+
+**Before (global.h):**
+```cpp
+int Natoms, Tatoms;  // Definitions in header - causes multiple definition errors
+double a, b, c;
+// ...
+```
+
+**After (global.h + globals.cpp):**
+```cpp
+// global.h - Declarations only
+extern int Natoms, Tatoms;
+extern double a, b, c;
+// ...
+
+// globals.cpp - Definitions
+int Natoms, Tatoms;
+double a, b, c;
+// ...
+```
+
+This approach follows C++ best practices and eliminates linker errors when including headers in multiple source files.
+
+### Build System Updates
+
+Both CMake and Makefile configurations have been updated to include the new source files:
+
+**CMakeLists.txt:**
+```cmake
+set(SOURCES
+    zeoran.cpp
+    output.cpp
+    globals.cpp
+    global.h
+    headers.h
+    libraries.h
+    output.h
+)
+```
+
+**Makefile:**
+```make
+$(BIN_DIR)/zeoran: zeoran.cpp output.cpp globals.cpp global.h headers.h libraries.h output.h
+	$(CXX) $(CXXFLAGS) zeoran.cpp output.cpp globals.cpp -o $@ $(CXXINCLUDES) $(LDFLAGS)
+```
+
+### Testing Framework Updates
+
+The testing framework has been enhanced to accommodate the new dynamic metadata:
+
+**Updated Comparison Logic:**
+```bash
+# Filter out the audit date and author lines before comparison
+grep -v "_audit_creation_date" "$ref_file" | grep -v "_audit_author_name" > "$temp_ref"
+grep -v "_audit_creation_date" "$out_file" | grep -v "_audit_author_name" > "$temp_out"
+
+if diff -q "$temp_ref" "$temp_out" > /dev/null; then
+    echo "  PASS: $file_name matches reference (ignoring metadata)"
+else
+    echo "  FAIL: $file_name differs from reference"
+    differences=$((differences + 1))
+fi
+```
+
+This ensures that tests validate the scientific content while ignoring the expected metadata differences.
+
+### Code Quality Improvements
+
+The modular refactoring brings several quality improvements:
+
+1. **Maintainability**: Output logic is now isolated and easier to modify
+2. **Testability**: Individual modules can be tested independently
+3. **Reusability**: Output functionality could be reused in other projects
+4. **Readability**: Main algorithm file is shorter and more focused
+5. **Standards Compliance**: Proper separation of declarations and definitions
+
+### Migration Path
+
+The refactoring maintains full backward compatibility:
+
+- **Existing Workflows**: All existing usage patterns continue to work unchanged
+- **Algorithm Integrity**: Core algorithms remain identical with verified test results
+- **File Formats**: Output file structure is preserved except for metadata improvements
+- **Build Process**: Standard build commands continue to work as before
+
+### Future Development
+
+The modular architecture provides a foundation for future enhancements:
+
+- **Additional Output Formats**: Easy to add new output writers (e.g., XYZ, PDB)
+- **Configurable Metadata**: Metadata could be made configurable via input files
+- **Plugin Architecture**: Output modules could be developed as plugins
+- **Performance Optimizations**: Individual modules can be optimized independently
+
+This refactoring demonstrates best practices for scientific software development while maintaining the reliability and performance that researchers depend on for their zeolite generation workflows.
