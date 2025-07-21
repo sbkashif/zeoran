@@ -1,8 +1,10 @@
+#include <string>
+
 //Unit cell parameters
 int Natoms, Tatoms;
 double a, b, c;
 double alpha, beta, gama;
-string setting;
+std::string setting;
 
 //Default merw parameters
 int Neqsteps=100;	//Number of steps to find equilibrium position
