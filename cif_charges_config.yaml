@@ -1,0 +1,26 @@
+# Config file for CIF processing - provides missing charge information
+# This file supplements the CIF file with information not present in the CIF format
+
+# Unit cell information is read from CIF file, so this section is optional for CIF
+# It can be used to override CIF values if needed
+unit_cell:
+  # These will override CIF values if uncommented
+  # a: 24.5550
+  # b: 24.5550
+  # c: 24.5550
+  # alpha: 90.0
+  # beta: 90.0
+  # gamma: 90.0
+  # setting: cubic
+
+# Required: Specify charges for atom types (CIF files often lack charge information)
+charges:
+  Si: 1.5      # Silicon charge for zeolites
+  O: -0.75     # Oxygen charge for zeolites
+  Al: 1.5      # Aluminum charge (for substitutions)
+
+# Optional: Specify masses for different atom types
+masses:
+  Si: 28.086   # Silicon mass (atomic mass units)
+  O: 15.999    # Oxygen mass
+  Al: 26.982   # Aluminum mass

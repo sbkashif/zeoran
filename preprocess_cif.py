@@ -7,18 +7,24 @@ It extracts unit cell information and atom positions from CIF files and
 generates the files needed by Zeoran.
 
 Usage:
-    python preprocess_cif.py <cif_file> <zeolite_name>
+    python preprocess_cif.py <cif_file> <zeolite_name> [config_file]
 
 Example:
     python preprocess_cif.py zeoran_data/cif_files/Framework_0_initial_1_1_1_P1.cif LTA
+    python preprocess_cif.py zeoran_data/cif_files/LTA_SI.cif LTA_SI cif_charges_config.yaml
+
+The config file is optional and can be used to:
+- Override unit cell parameters from the CIF file
+- Provide charge information if missing from the CIF file
 
 Author: GitHub Copilot
-Date: July 16, 2025
+Date: July 21, 2025
 """
 
 import os
 import sys
 import numpy as np
+import yaml
 from ase.io import read
 import shutil
 
@@ -26,8 +32,14 @@ def ensure_directory(path):
     """Create directory if it doesn't exist"""
     os.makedirs(path, exist_ok=True)
 
-def generate_unit_cell_file(atoms, zeolite_name, output_dir):
-    """Generate unit_cell file from ASE Atoms object"""
+def read_config_file(config_file):
+    """Read configuration from YAML file"""
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+    return config
+
+def generate_unit_cell_file(atoms, zeolite_name, output_dir, config_file=None):
+    """Generate unit_cell file from ASE Atoms object with optional config file"""
     # Count T-atoms (Si)
     t_atoms_count = sum(1 for atom in atoms.get_chemical_symbols() if atom == 'Si')
     
@@ -35,8 +47,36 @@ def generate_unit_cell_file(atoms, zeolite_name, output_dir):
         print("WARNING: No silicon (Si) atoms found in the CIF file!")
         print("This will cause problems as zeoran expects Si atoms to substitute with Al.")
         
-    # Get cell parameters
+    # Get cell parameters from CIF
     a, b, c, alpha, beta, gamma = atoms.cell.cellpar()
+    
+    # Optional: Override with config file values if provided
+    if config_file:
+        try:
+            config = read_config_file(config_file)
+            if 'unit_cell' in config and config['unit_cell'] is not None:
+                print("Overriding unit cell parameters with config file values:")
+                if 'a' in config['unit_cell']:
+                    a = config['unit_cell']['a']
+                    print(f"  a: {a}")
+                if 'b' in config['unit_cell']:
+                    b = config['unit_cell']['b']
+                    print(f"  b: {b}")
+                if 'c' in config['unit_cell']:
+                    c = config['unit_cell']['c']
+                    print(f"  c: {c}")
+                if 'alpha' in config['unit_cell']:
+                    alpha = config['unit_cell']['alpha']
+                    print(f"  alpha: {alpha}")
+                if 'beta' in config['unit_cell']:
+                    beta = config['unit_cell']['beta']
+                    print(f"  beta: {beta}")
+                if 'gamma' in config['unit_cell']:
+                    gamma = config['unit_cell']['gamma']
+                    print(f"  gamma: {gamma}")
+        except Exception as e:
+            print(f"Warning: Could not read config file {config_file}: {e}")
+            print("Proceeding with CIF data only")
     
     # Validate cell parameters
     if a <= 0 or b <= 0 or c <= 0:
@@ -54,9 +94,10 @@ def generate_unit_cell_file(atoms, zeolite_name, output_dir):
     unit_cell_dir = os.path.join(output_dir, "unit_cell")
     ensure_directory(unit_cell_dir)
     
-    # Write to unit_cell file
+    # Write to unit_cell file in extended zeoran format
     unit_cell_file = os.path.join(unit_cell_dir, f"{zeolite_name}.txt")
     with open(unit_cell_file, 'w') as f:
+        # Standard zeoran format
         f.write(f"Number of atoms:\t{len(atoms)}\n")
         f.write(f"Number of T-atoms:\t{t_atoms_count}\n")
         f.write(f"a:\t\t\t{a:.4f}\n")
@@ -66,6 +107,47 @@ def generate_unit_cell_file(atoms, zeolite_name, output_dir):
         f.write(f"beta:\t\t{beta}\n")
         f.write(f"gamma:\t\t{gamma}\n")
         f.write(f"setting:\t\t{setting}\n")
+        
+        # Extended format: add charges (extracted from CIF file)
+        f.write("\n# Atomic charges\n")
+        symbols = atoms.get_chemical_symbols()
+        unique_symbols = list(set(symbols))
+        
+        # Try to get charges: config file first (highest priority), then CIF file, then none
+        config_charges = {}
+        if config_file:
+            try:
+                config = read_config_file(config_file)
+                if 'charges' in config:
+                    config_charges = config['charges']
+                    print("Using charges from config file (unit_cell file)")
+            except Exception as e:
+                print(f"Warning: Could not read charges from config file: {e}")
+        
+        # If we have config charges, use them
+        if config_charges:
+            for symbol in unique_symbols:
+                if symbol in config_charges:
+                    f.write(f"charge_{symbol}:\t{config_charges[symbol]:.6f}\n")
+                else:
+                    f.write(f"# charge_{symbol}:\t# Not specified in config\n")
+        # Otherwise, check if CIF file has charges
+        elif 'initial_charges' in atoms.arrays:
+            charges_array = atoms.get_initial_charges()
+            # Create charge mapping from CIF data
+            charge_map = {}
+            for i, symbol in enumerate(symbols):
+                if symbol not in charge_map:
+                    charge_map[symbol] = charges_array[i]
+            
+            # Write charges from CIF
+            for symbol in unique_symbols:
+                f.write(f"charge_{symbol}:\t{charge_map[symbol]:.6f}\n")
+        # No charges available from either source
+        else:
+            f.write("# Note: No charges found in CIF file or config - proceeding without charge information\n")
+            for symbol in unique_symbols:
+                f.write(f"# charge_{symbol}:\t# Not available\n")
     
     print(f"Generated unit cell file: {unit_cell_file}")
     print(f"  Total atoms: {len(atoms)}")
@@ -75,8 +157,8 @@ def generate_unit_cell_file(atoms, zeolite_name, output_dir):
     
     return unit_cell_file
 
-def generate_atom_sites_file(atoms, zeolite_name, output_dir):
-    """Generate atom_sites file from ASE Atoms object"""
+def generate_atom_sites_file(atoms, zeolite_name, output_dir, config_file=None):
+    """Generate atom_sites file from ASE Atoms object with optional config file for charges"""
     # Create atom_sites directory if it doesn't exist
     atom_sites_dir = os.path.join(output_dir, "atom_sites")
     ensure_directory(atom_sites_dir)
@@ -101,22 +183,39 @@ def generate_atom_sites_file(atoms, zeolite_name, output_dir):
         else:
             atom_counts[symbol] = 1
     
-    # Try to get charges from the CIF file
-    # If not available, assign default charges based on atom type
+    # Get charges from config file first (highest priority), then CIF file, then none
     charges = []
+    charge_source = ""
     
-    # Extract charges if they exist in the CIF file
-    if 'initial_charges' in atoms.arrays:
+    # Check config file first (highest priority)
+    config_charges = {}
+    if config_file:
+        try:
+            config = read_config_file(config_file)
+            if 'charges' in config:
+                config_charges = config['charges']
+                print("Using charges from config file for atom_sites")
+                charge_source = "From config file"
+        except Exception as e:
+            print(f"Warning: Could not read charges from config file: {e}")
+    
+    # If we have config charges, use them
+    if config_charges:
+        charges = [0.0] * len(atoms)  # Initialize with zeros
+        symbols = atoms.get_chemical_symbols()
+        for i, symbol in enumerate(symbols):
+            if symbol in config_charges:
+                charges[i] = config_charges[symbol]
+    # Otherwise, check if CIF file has charges
+    elif 'initial_charges' in atoms.arrays:
         charges = atoms.get_initial_charges()
+        charge_source = "From CIF file"
+        print("Using charges from CIF file for atom_sites")
+    # No charges available from either source
     else:
-        # Assign default charges based on element
-        for symbol in symbols:
-            if symbol == 'Si':
-                charges.append(1.5)  # Default charge for Si in zeolites
-            elif symbol == 'O':
-                charges.append(-0.75)  # Default charge for O in zeolites
-            else:
-                charges.append(0.0)  # Default for other elements
+        charges = [0.0] * len(atoms)  # Use zeros as placeholders
+        charge_source = "No charges available - using zeros"
+        print("Note: No charge information found in CIF file or config - using zeros")
     
     # Write to atom_sites file
     atom_sites_file = os.path.join(atom_sites_dir, f"{zeolite_name}.txt")
@@ -130,7 +229,7 @@ def generate_atom_sites_file(atoms, zeolite_name, output_dir):
     print(f"Generated atom sites file: {atom_sites_file}")
     print(f"  Total atoms: {len(atoms)}")
     print(f"  Atom types: {atom_counts}")
-    print(f"  Charge assignment: {'From CIF file' if 'initial_charges' in atoms.arrays else 'Using default values'}")
+    print(f"  Charge assignment: {charge_source}")
     
     # Validate the ratio of Si:O which should be approximately 1:2 in zeolites
     if 'Si' in atom_counts and 'O' in atom_counts:
@@ -200,11 +299,13 @@ def validate_structure(atoms, unit_cell_file, atom_sites_file):
 def main():
     """Main function to process CIF files"""
     if len(sys.argv) < 3:
-        print("Usage: python preprocess_cif.py <cif_file> <zeolite_name>")
+        print("Usage: python preprocess_cif.py <cif_file> <zeolite_name> [config_file]")
+        print("  config_file: Optional YAML config file to override CIF values")
         sys.exit(1)
     
     cif_file = sys.argv[1]
     zeolite_name = sys.argv[2]
+    config_file = sys.argv[3] if len(sys.argv) > 3 else None
     
     # Default output directory is zeoran_data in the current directory
     output_dir = os.path.join(os.getcwd(), "zeoran_data")
@@ -222,10 +323,14 @@ def main():
     
     print(f"Processing zeolite: {zeolite_name}")
     print(f"Output directory: {output_dir}")
+    if config_file:
+        print(f"Using config file: {config_file}")
+    else:
+        print("No config file specified - using CIF data only")
     
     # Generate required files
-    unit_cell_file = generate_unit_cell_file(atoms, zeolite_name, output_dir)
-    atom_sites_file = generate_atom_sites_file(atoms, zeolite_name, output_dir)
+    unit_cell_file = generate_unit_cell_file(atoms, zeolite_name, output_dir, config_file)
+    atom_sites_file = generate_atom_sites_file(atoms, zeolite_name, output_dir, config_file)
     copy_cif_file(cif_file, zeolite_name, output_dir)  # Now just logs info, doesn't copy
     
     # Validate the generated files
