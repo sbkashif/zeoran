@@ -89,33 +89,72 @@ int main (void) {
 
 	fin.close();
 
-	//Read zeolite and unit cell
-	string data_dir;
+	//Read zeolite and unit cell - check run location first, then install location
 	
-	// Check for environment variable first
-	char* env_data_dir = getenv("ZEORAN_DATA_DIR");
-	if (env_data_dir != nullptr) {
-		data_dir = string(env_data_dir);
-	} 
-	#ifdef ZEORAN_DATA_DIR
-	// Then check if we have a compiled-in default
-	else {
-		data_dir = string(ZEORAN_DATA_DIR);
-	}
-	#else
-	// Finally fall back to local directory, then standard location
-	else {
-		// Check if we have a local data directory
-		if (access("./zeoran_data/atom_sites", F_OK) == 0) {
-			data_dir = "./zeoran_data";
-		} else {
-			data_dir = "/usr/local/share/zeoran";
+	// Try to find atom_sites file: first in run location, then install location
+	string local_atom_sites = "./atom_sites/" + name_zeo + ".txt";
+	if (access(local_atom_sites.c_str(), F_OK) == 0) {
+		file_zeo = local_atom_sites;
+		cout << "Using local atom_sites file: " << file_zeo << endl;
+	} else {
+		// Fall back to install location
+		string install_data_dir;
+		
+		// Check for environment variable first
+		char* env_data_dir = getenv("ZEORAN_DATA_DIR");
+		if (env_data_dir != nullptr) {
+			install_data_dir = string(env_data_dir);
+		} 
+		#ifdef ZEORAN_DATA_DIR
+		// Then check if we have a compiled-in default
+		else {
+			install_data_dir = string(ZEORAN_DATA_DIR);
 		}
+		#else
+		// Finally fall back to build directory or system install
+		else {
+			if (access("./build/share/zeoran/atom_sites", F_OK) == 0) {
+				install_data_dir = "./build/share/zeoran";
+			} else {
+				install_data_dir = "/usr/local/share/zeoran";
+			}
+		}
+		#endif
+		
+		file_zeo = install_data_dir + "/atom_sites/" + name_zeo + ".txt";
+		cout << "Using install atom_sites file: " << file_zeo << endl;
 	}
-	#endif
 	
-	file_zeo = data_dir + "/atom_sites/" + name_zeo + ".txt";
-	file_ucell = data_dir + "/unit_cell/" + name_zeo + ".txt";
+	// Try to find unit_cell file: first in run location, then install location
+	string local_unit_cell = "./unit_cell/" + name_zeo + ".txt";
+	if (access(local_unit_cell.c_str(), F_OK) == 0) {
+		file_ucell = local_unit_cell;
+		cout << "Using local unit_cell file: " << file_ucell << endl;
+	} else {
+		// Fall back to install location (use same logic as atom_sites)
+		string install_data_dir;
+		
+		char* env_data_dir = getenv("ZEORAN_DATA_DIR");
+		if (env_data_dir != nullptr) {
+			install_data_dir = string(env_data_dir);
+		} 
+		#ifdef ZEORAN_DATA_DIR
+		else {
+			install_data_dir = string(ZEORAN_DATA_DIR);
+		}
+		#else
+		else {
+			if (access("./build/share/zeoran/atom_sites", F_OK) == 0) {
+				install_data_dir = "./build/share/zeoran";
+			} else {
+				install_data_dir = "/usr/local/share/zeoran";
+			}
+		}
+		#endif
+		
+		file_ucell = install_data_dir + "/unit_cell/" + name_zeo + ".txt";
+		cout << "Using install unit_cell file: " << file_ucell << endl;
+	}
 
 	read_unit_cell(file_ucell);
 	list = read_atom_sites(file_zeo);
@@ -257,6 +296,11 @@ void read_unit_cell (string fname) {
 	fin >> aux >> alpha >> aux >> beta >> aux >> gama;
 	fin >> aux >> setting;
 	
+	// Skip any additional lines (like charge definitions) in extended format
+	// This allows zeoran to work with both old and new format files
+	// The preprocessors handle charge assignment to atom_sites files
+	
+	fin.close();
 	return;
 }
 
