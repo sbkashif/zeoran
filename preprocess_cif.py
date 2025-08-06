@@ -38,7 +38,7 @@ def read_config_file(config_file):
         config = yaml.safe_load(f)
     return config
 
-def generate_unit_cell_file(atoms, zeolite_name, output_dir, config_file=None):
+def generate_unit_cell_file(atoms, zeolite_name, output_dir, config_file=None, output_formats='cif'):
     """Generate unit_cell file from ASE Atoms object with optional config file"""
     # Count T-atoms (Si)
     t_atoms_count = sum(1 for atom in atoms.get_chemical_symbols() if atom == 'Si')
@@ -107,6 +107,7 @@ def generate_unit_cell_file(atoms, zeolite_name, output_dir, config_file=None):
         f.write(f"beta:\t\t{beta}\n")
         f.write(f"gamma:\t\t{gamma}\n")
         f.write(f"setting:\t\t{setting}\n")
+        f.write(f"output_formats:\t{output_formats}\n")
         
         # Extended format: add charges (extracted from CIF file)
         f.write("\n# Atomic charges\n")
@@ -298,14 +299,20 @@ def validate_structure(atoms, unit_cell_file, atom_sites_file):
 
 def main():
     """Main function to process CIF files"""
-    if len(sys.argv) < 3:
-        print("Usage: python preprocess_cif.py <cif_file> <zeolite_name> [config_file]")
-        print("  config_file: Optional YAML config file to override CIF values")
-        sys.exit(1)
+    import argparse
     
-    cif_file = sys.argv[1]
-    zeolite_name = sys.argv[2]
-    config_file = sys.argv[3] if len(sys.argv) > 3 else None
+    parser = argparse.ArgumentParser(description='Zeoran CIF Preprocessor')
+    parser.add_argument('cif_file', help='Input CIF file')
+    parser.add_argument('zeolite_name', help='Zeolite name for output files')
+    parser.add_argument('config_file', nargs='?', help='Optional YAML config file')
+    parser.add_argument('--output-formats', default='cif', help='Output formats (cif, gro, all)')
+    
+    args = parser.parse_args()
+    
+    cif_file = args.cif_file
+    zeolite_name = args.zeolite_name
+    config_file = args.config_file
+    output_formats = args.output_formats
     
     # Default output directory is zeoran_data in the current directory
     output_dir = os.path.join(os.getcwd(), "zeoran_data")
@@ -323,13 +330,14 @@ def main():
     
     print(f"Processing zeolite: {zeolite_name}")
     print(f"Output directory: {output_dir}")
+    print(f"Output formats: {output_formats}")
     if config_file:
         print(f"Using config file: {config_file}")
     else:
         print("No config file specified - using CIF data only")
     
     # Generate required files
-    unit_cell_file = generate_unit_cell_file(atoms, zeolite_name, output_dir, config_file)
+    unit_cell_file = generate_unit_cell_file(atoms, zeolite_name, output_dir, config_file, output_formats)
     atom_sites_file = generate_atom_sites_file(atoms, zeolite_name, output_dir, config_file)
     copy_cif_file(cif_file, zeolite_name, output_dir)  # Now just logs info, doesn't copy
     
@@ -342,6 +350,7 @@ def main():
     print(f"   - For CMake: ./install_with_cmake.sh")
     print(f"   - For traditional Make: ./install_traditional_make.sh")
     print(f"2. Run zeoran with '{zeolite_name}' as the zeolite name in generate.input")
+    print(f"3. Zeoran will generate {output_formats} format output files")
 
 if __name__ == "__main__":
     main()

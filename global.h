@@ -8,6 +8,7 @@ extern int Natoms, Tatoms;
 extern double a, b, c;
 extern double alpha, beta, gama;
 extern std::string setting;
+extern std::string output_formats;
 
 //Default merw parameters
 extern int Neqsteps;	//Number of steps to find equilibrium position

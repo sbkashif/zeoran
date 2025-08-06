@@ -1,0 +1,44 @@
+# Example configuration file for GRO input processing
+# This file provides the crystallographic information missing from GRO files
+
+unit_cell:
+  # Unit cell dimensions in Angstroms
+  #a: 24.345
+  #b: 24.345 
+  #c: 24.345
+  
+  # Unit cell angles in degrees
+  alpha: 90.0
+  beta: 90.0
+  gamma: 90.0
+  
+  # Lattice setting (cubic, orthorhombic, triclinic)
+  setting: cubic
+
+# Required: Specify charges for different atom types
+# All atom types present in your GRO file must be listed here
+charges:
+  Si: 1.5      # Silicon charge
+  O: -0.75     # Oxygen charge
+  Al: 1.5      # Aluminum charge (if present)
+  H: 0.0       # Hydrogen charge (if present)
+
+# Optional: Specify masses for different atom types
+# If not provided, built-in masses will be used for common elements
+masses:
+  Si: 28.086   # Silicon mass (atomic mass units)
+  O: 15.999    # Oxygen mass
+  Al: 26.982   # Aluminum mass
+  H: 1.008     # Hydrogen mass
+  C: 12.011    # Carbon mass (if present)
+  N: 14.007    # Nitrogen mass (if present)
+
+# Example for a different zeolite structure:
+# unit_cell:
+#   a: 12.345
+#   b: 15.678
+#   c: 18.234
+#   alpha: 90.0
+#   beta: 102.5
+#   gamma: 90.0
+#   setting: orthorhombic

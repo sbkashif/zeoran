@@ -184,7 +184,12 @@ int main (void) {
 			Als=generate_chains(M_T, neigbrs, chains);
 
 			//Print structure
-			print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			if (output_formats == "cif" || output_formats == "all") {
+				print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
+			if (output_formats == "gro" || output_formats == "all") {
+				print_gro_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
 
 			free(Tids);
 		}		
@@ -212,7 +217,12 @@ int main (void) {
 			Als=clusters_substitutions(M_T, Nals);
 
 			//Print structure
-			print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			if (output_formats == "cif" || output_formats == "all") {
+				print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
+			if (output_formats == "gro" || output_formats == "all") {
+				print_gro_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
 
 			free(Tids);
 		}	
@@ -240,7 +250,12 @@ int main (void) {
 			Als=merw_substitutions(M_T, Nals);
 
 			//Print structure
-			print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			if (output_formats == "cif" || output_formats == "all") {
+				print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
+			if (output_formats == "gro" || output_formats == "all") {
+				print_gro_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
 
 			free(Tids);
 		}			
@@ -256,7 +271,12 @@ int main (void) {
 			vector<int> Als = generate_random(Nals);
 			
 			//Generate structure
-			print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			if (output_formats == "cif" || output_formats == "all") {
+				print_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
+			if (output_formats == "gro" || output_formats == "all") {
+				print_gro_structure(list, Als, i, name_zeo, name_alg, out_name);
+			}
 		}
 	}
 
@@ -296,6 +316,19 @@ void read_unit_cell (string fname) {
 	fin >> aux >> a >> aux >> b >> aux >> c;
 	fin >> aux >> alpha >> aux >> beta >> aux >> gama;
 	fin >> aux >> setting;
+	
+	// Try to read output_formats if available (for backward compatibility)
+	if (!fin.eof()) {
+		string temp_aux, temp_formats;
+		fin >> temp_aux >> temp_formats;
+		if (temp_aux == "output_formats:") {
+			output_formats = temp_formats;
+		} else {
+			output_formats = "cif"; // default for old format files
+		}
+	} else {
+		output_formats = "cif"; // default for old format files
+	}
 	
 	// Skip any additional lines (like charge definitions) in extended format
 	// This allows zeoran to work with both old and new format files

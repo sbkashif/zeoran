@@ -22,18 +22,24 @@ The generalized version of the software, while keeping the original algorithms f
 
 
 ### Key Features of the Adapted Version
-1. **Automated CIF Preprocessing**: The adapted version uses the Atomic Simulation Environment (ASE) to automatically preprocess CIF files, generating all required internal files and allowing immediate use in the `generate.input` file.
-2. **Flexible Data Directory Management**: The software supports multiple data directory configurations:
+1. **Multi-Format Output Support**: The software now supports both CIF (crystallographic) and GRO/ITP (GROMACS) output formats:
+   - **CIF Output**: Traditional crystallographic format with fractional coordinates
+   - **GRO Output**: GROMACS coordinate format with Cartesian coordinates in nanometers
+   - **ITP Topology**: GROMACS topology files with proper atom definitions and masses
+   - **Flexible Format Selection**: Choose output format via preprocessor (`cif`, `gro`, or `all`)
+2. **Automated CIF Preprocessing**: The adapted version uses the Atomic Simulation Environment (ASE) to automatically preprocess CIF files, generating all required internal files and allowing immediate use in the `generate.input` file.
+3. **GRO File Preprocessing**: Support for GROMACS GRO input files with YAML configuration for unit cell parameters and charge assignments.
+4. **Flexible Data Directory Management**: The software supports multiple data directory configurations:
    - **Local directories**: Direct `atom_sites/` and `unit_cell/` directories in the run location
    - **Environment variable**: `ZEORAN_DATA_DIR` for custom data locations
    - **Organized repo structure**: `zeoran_data/` directory for structured file organization
    - **Build directory fallback**: Automatic fallback to installation directory
-3. **Modern CMake Build System**: A modern CMake-based build system has been implemented, allowing for:
+5. **Modern CMake Build System**: A modern CMake-based build system has been implemented, allowing for:
    - Cross-platform compatibility
    - Dependency management
    - Static linking for high-performance computing environments
-4. **Interactive Demo Workflow**: A complete demo workflow script is provided to guide new users through the process of running the software, setting up input parameters, and executing zeoran with their configuration.
-5. **Comprehensive Testing Framework**: A robust testing infrastructure has been added to ensure reproducible results and facilitate development. The framework includes fixed random seed support, benchmark inputs, reference outputs, and comparison tools. This ensures that algorithm behavior remains consistent across code changes and allows for regression testing when implementing new features or optimizations.
+6. **Interactive Demo Workflow**: A complete demo workflow script is provided to guide new users through the process of running the software, setting up input parameters, and executing zeoran with their configuration.
+7. **Comprehensive Testing Framework**: A robust testing infrastructure has been added to ensure reproducible results and facilitate development. The framework includes fixed random seed support, benchmark inputs, reference outputs, and comparison tools. This ensures that algorithm behavior remains consistent across code changes and allows for regression testing when implementing new features or optimizations.
 
 ## Prerequisites
 - CMake (version 3.10 or higher)
@@ -86,20 +92,51 @@ Working with a new zeolite framework does **NOT** require reinstallation of the 
 
 ### Quick workflow for a new zeolite:
 
-1. **Preprocess your CIF file**:
+1. **Preprocess your input file**:
    ```bash
+   # For CIF files (crystallographic format)
    python preprocess_cif.py path/to/your/file.cif ZEOLITE_NAME
+   
+   # For GRO files (GROMACS format) - requires YAML config
+   python preprocess_gro.py path/to/your/file.gro config.yaml ZEOLITE_NAME
    ```
 
-2. **Update generate.input** with your zeolite name:
+2. **Choose output format** (optional - defaults to input format):
+   ```bash
+   # Specify output format during preprocessing
+   python preprocess_cif.py input.cif ZEOLITE_NAME --output-formats gro
+   python preprocess_cif.py input.cif ZEOLITE_NAME --output-formats all
+   ```
+
+3. **Update generate.input** with your zeolite name:
    ```bash
    # Edit generate.input to use ZEOLITE_NAME as the first line
    ```
 
-3. **Run zeoran** (no reinstallation needed):
+4. **Run zeoran** (no reinstallation needed):
    ```bash
    ./build/bin/zeoran
    ```
+
+### Output Format Options
+
+The software supports multiple output formats that can be controlled during preprocessing:
+
+- **`cif`**: Traditional crystallographic format with fractional coordinates
+- **`gro`**: GROMACS coordinate format with Cartesian coordinates (nm) plus ITP topology file
+- **`all`**: Generate all supported formats (CIF and GRO/ITP files) for the same structure
+
+Examples:
+```bash
+# Generate only CIF output
+python preprocess_cif.py structure.cif LTA_TEST -o cif
+
+# Generate only GRO/ITP output  
+python preprocess_cif.py structure.cif LTA_TEST -o gro
+
+# Generate all formats
+python preprocess_cif.py structure.cif LTA_TEST -o all
+```
 
 ### Complete automated workflow:
 

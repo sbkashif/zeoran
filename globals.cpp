@@ -5,6 +5,7 @@ int Natoms, Tatoms;
 double a, b, c;
 double alpha, beta, gama;
 std::string setting;
+std::string output_formats;
 
 //Default merw parameters
 int Neqsteps = 100;	//Number of steps to find equilibrium position

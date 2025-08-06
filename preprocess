@@ -37,10 +37,17 @@ Examples:
   %(prog)s -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI
   %(prog)s -i zeoran_data/cif_files/LTA_SI.cif -n LTA_SI -c config.yaml
   %(prog)s -i structure.gro -n MY_ZEOLITE -c config.yaml
+  %(prog)s -i file.cif -n ZEOLITE -o gro                    # Generate GRO output from CIF input
+  %(prog)s -i file.gro -n ZEOLITE -c config.yaml -o all   # Generate all formats from GRO input
 
 Supported file types:
   .cif    CIF files (config file optional)
   .gro    GROMACS files (config file required)
+
+Output format options:
+  cif     Generate CIF files only (crystallographic format)
+  gro     Generate GRO files only (GROMACS format with ITP topology)
+  all     Generate all supported formats (CIF and GRO)
 
 Config file requirements:
   CIF files: Optional - can override unit cell parameters or provide charges
@@ -62,6 +69,10 @@ Config file requirements:
     parser.add_argument('-v', '--verbose', 
                        action='store_true',
                        help='Enable verbose output')
+    
+    parser.add_argument('-o', '--output-formats', 
+                       default=None,
+                       help='Output formats to generate (comma-separated): cif, gro, all. Default: same as input format')
     
     return parser
 
@@ -113,6 +124,7 @@ def main():
     zeolite_name = args.name
     config_file = args.config
     verbose = args.verbose
+    output_formats = args.output_formats
     
     # Check if input file exists
     if not os.path.exists(input_file):
@@ -122,12 +134,31 @@ def main():
     # Detect file type
     file_extension = Path(input_file).suffix.lower()
     
+    # Determine default output format based on input type
+    if output_formats is None:
+        if file_extension == '.cif':
+            output_formats = 'cif'
+        elif file_extension == '.gro':
+            output_formats = 'gro'
+        else:
+            output_formats = 'cif'  # fallback
+    
+    # Validate output formats
+    valid_formats = {'cif', 'gro', 'all'}
+    requested_formats = set(format.strip().lower() for format in output_formats.split(','))
+    if not requested_formats.issubset(valid_formats):
+        invalid = requested_formats - valid_formats
+        print(f"Error: Invalid output format(s): {', '.join(invalid)}")
+        print(f"Valid formats: {', '.join(valid_formats)}")
+        sys.exit(1)
+    
     print("================================================")
     print("Zeoran Universal Preprocessor")
     print("================================================")
     print(f"Input file: {input_file}")
     print(f"File type: {file_extension}")
     print(f"Zeolite name: {zeolite_name}")
+    print(f"Output formats: {output_formats}")
     if config_file:
         print(f"Config file: {config_file}")
     if verbose:
@@ -152,6 +183,9 @@ def main():
             print(f"Using config file: {config_file}")
         else:
             print("No config file provided (optional for CIF files)")
+        
+        # Add output format specification
+        cmd.extend(['--output-formats', output_formats])
         
     elif file_extension == '.gro':
         # GRO file processing
@@ -181,9 +215,12 @@ def main():
             print("Please ensure the GRO preprocessor is available")
             sys.exit(1)
         
-        # Build command
-        cmd = ['python3', gro_preprocessor, input_file, config_file, zeolite_name]
+        # Build command (order: input_file, zeolite_name, config_file)
+        cmd = ['python3', gro_preprocessor, input_file, zeolite_name, config_file]
         print(f"Using required config file: {config_file}")
+        
+        # Add output format specification
+        cmd.extend(['--output-formats', output_formats])
         
     else:
         print(f"Error: Unsupported file type '{file_extension}'")

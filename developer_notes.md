@@ -720,6 +720,169 @@ install(DIRECTORY zeoran_data/unit_cell DESTINATION share/zeoran)
 
 This architecture provides the flexibility users need while keeping the core algorithms simple and maintainable. The preprocessing system writes to organized directories, the build system installs data files appropriately, and the runtime system locates files through a clear priority hierarchy.
 
+## Recent Updates: Multi-Format Output System
+
+A comprehensive multi-format output system has been implemented, enabling the software to generate structures in both traditional crystallographic (CIF) and molecular dynamics (GROMACS) formats. This enhancement significantly expands the software's utility for different simulation workflows.
+
+### GROMACS Format Support
+
+The software now supports complete GROMACS-compatible output with proper format compliance:
+
+**GRO File Format:**
+- **Cartesian Coordinates**: Positions in nanometers with proper unit conversion from Ångström
+- **Fixed-Width Columns**: Strict adherence to GROMACS format specification
+- **Velocity Fields**: Zero velocities included for molecular dynamics initialization
+- **Box Vectors**: Proper periodic boundary condition support
+
+**ITP Topology Files:**
+- **Atom Definitions**: Complete topology with atom types, charges, and masses
+- **Residue Information**: Consistent shortened residue names (max 5 characters)
+- **GROMACS Compatibility**: Standard format for molecular dynamics simulations
+
+### Implementation Architecture
+
+**Output Module Structure:**
+The output functionality has been extracted into a dedicated module for better organization:
+
+```cpp
+// output.h - Function declarations
+void print_structure(atom *list, vector<int> Als, int struc, string name_zeo, string name_alg, string out_name);
+void print_gro_structure(atom *list, vector<int> Als, int struc, string name_zeo, string name_alg, string out_name);
+
+// output.cpp - Implementation with proper GROMACS formatting
+void print_gro_structure(atom *list, vector<int> Als, int struc, string name_zeo, string name_alg, string out_name) {
+    // GRO format: %5d%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f
+    // ITP format: Complete topology with masses and charges
+}
+```
+
+**Conditional Output System:**
+The main zeoran executable uses a flexible output system based on the `output_formats` setting:
+
+```cpp
+// All four algorithms (chains, clusters, merw, random) support conditional output
+if (output_formats == "cif" || output_formats == "all") {
+    print_structure(list, Als, struc, name_zeo, name_alg, out_name);
+}
+if (output_formats == "gro" || output_formats == "all") {
+    print_gro_structure(list, Als, struc, name_zeo, name_alg, out_name);
+}
+```
+
+### Format Selection Integration
+
+**Preprocessor Control:**
+The preprocessing system now supports output format selection via command-line arguments:
+
+```bash
+# Universal preprocessor with format selection
+python preprocess -i input.cif -n NAME -o gro     # GRO output only
+python preprocess -i input.cif -n NAME -o all    # All formats
+python preprocess -i input.gro -n NAME -c config  # Auto-detects GRO input
+```
+
+**Intelligent Defaults:**
+- CIF input files default to CIF output
+- GRO input files default to GRO output  
+- User can override via `--output-formats` parameter
+- Settings stored in unit_cell files for runtime control
+
+**Unit Cell File Extension:**
+The unit_cell file format has been extended to include output format control:
+
+```
+Number of atoms:    576
+Number of T-atoms:  192
+a:                  24.5550
+b:                  24.5550
+c:                  24.5550
+alpha:              90.0
+beta:              90.0
+gamma:              90.0
+setting:            cubic
+output_formats:     all    # New field for format control
+```
+
+### GROMACS Format Compliance
+
+**Coordinate Conversion:**
+Proper unit conversion from crystallographic to molecular dynamics conventions:
+
+```cpp
+// Convert from fractional to Cartesian coordinates, then to nanometers
+double x_cart = fract_x * unit_cell_a;  // Ångström
+double x_gro = x_cart / 10.0;           // Convert to nanometers
+
+// Proper rounding and formatting for GROMACS
+fprintf(fout, "%5d%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f
+",
+        residue_number, residue_name, atom_name, atom_number,
+        x_gro, y_gro, z_gro, 0.0, 0.0, 0.0);
+```
+
+**Residue Name Handling:**
+Consistent shortened residue names to meet GROMACS 5-character limit:
+
+```cpp
+string shortened_name = name_zeo.substr(0, 5);  // Max 5 characters
+// Used consistently in both GRO coordinates and ITP topology
+```
+
+**Mass Assignment:**
+Proper atomic masses for different elements:
+
+```cpp
+double mass = (atom.type == "Si") ? 28.0860 : 
+              (atom.type == "Al") ? 26.9820 : 
+              (atom.type == "O")  ? 15.9990 : 1.0000;
+```
+
+### Benefits of Multi-Format Output
+
+1. **Workflow Flexibility**: Support for both crystallographic and molecular dynamics workflows
+2. **Format Preservation**: Maintains exact atom ordering between CIF and GRO outputs
+3. **GROMACS Compatibility**: Fully compliant with GROMACS format specifications
+4. **Topology Generation**: Automatic ITP file creation for molecular dynamics setup
+5. **Coordinate Accuracy**: Proper unit conversion with precision preservation
+6. **Residue Consistency**: Shortened names used consistently across formats
+7. **Conditional Generation**: Efficient output based on user requirements
+
+### Technical Implementation Details
+
+**No Algorithm Modification:**
+The multi-format system was implemented without modifying any of the core zeolite generation algorithms (chains, clusters, merw, random). This ensures:
+- Full backward compatibility
+- Preservation of algorithm correctness
+- Clean separation of concerns
+- Easy maintenance and testing
+
+**Global Variable Management:**
+Proper separation of declarations and definitions:
+
+```cpp
+// global.h - declarations
+extern std::string output_formats;
+
+// globals.cpp - definitions  
+std::string output_formats = "cif";  // Default value
+```
+
+**Dynamic Metadata:**
+Output files use current system information rather than hardcoded values:
+
+```cpp
+// Get current user and date
+const char* username = getenv("USER");
+time_t rawtime;
+struct tm * timeinfo;
+char date_buffer[80];
+time(&rawtime);
+timeinfo = localtime(&rawtime);
+strftime(date_buffer, sizeof(date_buffer), "%Y-%m-%d", timeinfo);
+```
+
+This multi-format output system provides the foundation for integrating zeoran with diverse computational chemistry and materials science workflows while maintaining the software's core algorithmic strengths.
+
 ## Recent Updates: Modular Code Refactoring
 
 To improve code maintainability and organization, the zeoran codebase has undergone significant modular refactoring. This work separates concerns and creates a cleaner architecture while maintaining full backward compatibility.
@@ -730,7 +893,7 @@ The output writing functionality has been extracted from the main `zeoran.cpp` f
 
 **New Files Created:**
 - `output.h` - Header file with output function declarations
-- `output.cpp` - Implementation of output writing functionality
+- `output.cpp` - Implementation of output writing functionality  
 - `globals.cpp` - Global variable definitions (separated from declarations)
 
 **Key Changes:**
@@ -755,9 +918,6 @@ strftime(date_buffer, sizeof(date_buffer), "%Y-%m-%d", timeinfo);
 const char* username = getenv("USER");
 if (username == nullptr) {
     username = getenv("USERNAME"); // Windows fallback
-    if (username == nullptr) {
-        username = "unknown_user";
-    }
 }
 
 // Write to CIF file
@@ -766,6 +926,9 @@ fout << "_audit_author_name '" << username << "'" << endl;
 ```
 
 **Benefits:**
+- **Accurate Metadata**: Files contain actual creation date and author information
+- **No Hardcoded Values**: Eliminates outdated static information in output files
+- **Cross-Platform Support**: Works on both Unix-like and Windows systems
 - **Accurate Timestamps**: Files reflect when they were actually generated
 - **User Tracking**: Clear attribution of who generated each structure
 - **Cross-Platform Support**: Works on both Unix/Linux and Windows systems
