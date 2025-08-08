@@ -484,8 +484,7 @@ int find_neigb_random(int n, int **M_T) {
 
 	//Check that there are available neighbours
 	if(possible_neis.size() == 0) {
-		cerr << "No more neighbours available" << endl;
-		cerr << "Structure could not be generated" << endl;
+		cerr << "Structure could not be generated: No more neighbours available" << endl;
 		exit(1);
 	}
 
@@ -524,8 +523,7 @@ vector<int> generate_chains (int **M_T, vector<vector<int> > neigbrs, vector<int
 
 		//Check that there are more root atoms
 		if(Tpos.size() == 0) {
-			cerr << "No more root atoms available" << endl;
-			cerr << "Structure could not be generated" << endl;
+			cerr << "Structure could not be generated: No more root atoms available" << endl;
 			exit(1);
 		}
 
@@ -711,8 +709,7 @@ vector<int> merw_substitutions (int **M_T, int Nsubst) {
 	for(int i=1; i<Nsubst; i++) {
 		//Check that there are more available atoms
 		if(Tpos.size() == 0) {
-			cerr << "No more atoms available" << endl;
-			cerr << "Structure could not be generated" << endl;
+			cerr << "Structure could not be generated: No more atoms available" << endl;
 			exit(1);
 		}
 
